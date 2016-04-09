@@ -1,7 +1,6 @@
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 from django.http import HttpResponse
-# from django.db import models
 from .models import *
 
 from twilio.rest import TwilioRestClient
@@ -43,9 +42,9 @@ def execute_command(command, symbols, phone_number):
 	elif command == '#2': # return status message
 		return subscribe_stocks(symbols, phone_number)
 	elif command == '#3':
-		return ''
+		return unsubscribe_stocks(symbols, phone_number)
 	elif command == '#4':
-		return ''
+		return unsubscribe_all(phone_number)
 	else:
 		return help_info()
 
@@ -86,7 +85,6 @@ def subscribe_stocks(symbols, phone_number):
 	"""
 
 	"""
-
 	error_message = ''
 	message = ''
 
@@ -123,11 +121,49 @@ def subscribe_stocks(symbols, phone_number):
 		# Check subscription
 		try:
 			subscription = Subscription.objects.get(user=user, stock=stock)
+			subscription.status = True
+			subscription.save()
 		except Subscription.DoesNotExist:
 			subscription_list.append(Subscription(user=user, stock=stock))
+
 	Subscription.objects.bulk_create(subscription_list)
 	return message + 'are subscribed\n' + error_message + 'are not valid stock symbol'
 			
+def unsubscribe_stocks(symbols, phone_number):
+	"""
+
+	"""
+	message = 'Successfully Unsubscribe'
+	try:
+		user = User.objects.get(phone_number=phone_number)
+	except User.DoesNotExist:
+		message = 'You don\'t subscribe any stock information'
+	else:
+		for symbol in symbols:
+			try:
+				stock = Stock.objects.get(symbol=symbol)
+			except Stock.DoesNotExist:
+				continue
+			
+			try:
+				s = Subscription.objects.get(user=user, stock=stock)
+				s.status = False
+				s.save()
+			except Subscription.DoesNotExist:
+				pass
+	return message
+
 def unsubscribe_all(phone_number):
-	return ''
+	"""
+
+	"""
+	message = ''
+	try:
+		user = User(phone_number=phone_number)
+	except User.DoesNotExist:
+		message = 'You don\'t subscribe any stock information'
+	else:
+		Subscription.objects.filter(user__phone_number=user.phone_number).update(status=False)
+		message = 'Successfully Unsubscribe All'
+	return message
 

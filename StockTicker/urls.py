@@ -20,7 +20,6 @@ from django.contrib import admin
 import handler.views
 
 urlpatterns = [
-
 	url(r'^$', handler.views.reply_sms),
     url(r'^admin/', include(admin.site.urls)),
 ]
