@@ -1,5 +1,5 @@
 # StockTicker
-This project functions as an Stock Ticker where a mobile phone user can send a text message with command followed by stock symbols and it will return the result.
+This project functions as an Stock Ticker where a mobile phone user can send a text message with command followed by stock symbols and it will return the stock info scraped from Yhaoo.
 
 Commands:  
  #0 for stock price (can only type stock symbols without #0)
