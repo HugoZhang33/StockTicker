@@ -24,6 +24,7 @@ def reply_sms(request):
 	resp.message(message)
 	return HttpResponse(str(resp))
 
+
 def split_text(text):
 	"""
 	Split text into stock symbols and optional command 
@@ -34,6 +35,7 @@ def split_text(text):
 		return (text[0:2], text[2:].split())
 	else:
 		return ('#0', text.split())
+
 
 def execute_command(command, symbols, phone_number):
 	"""
@@ -63,6 +65,7 @@ def execute_command(command, symbols, phone_number):
 	else:
 		return help_info()
 
+
 def get_stock_info(symbols, moreInfo=False):
 	""" 
 	Scrape stock info from Yahoo finance
@@ -90,6 +93,7 @@ def get_stock_info(symbols, moreInfo=False):
 					'Please type #0 followed by stock symbols to get stock price'
 	return message if message != '' else alert_message
 
+
 def help_info():
 	return  "Command #0, #1, #2, #3 are followed by stock symbols, like '#1 FB GOOG' would return more information about the stock of Facebook and Google\n\n" \
 			+ "#0 for stock price (can only type stock symbols without #0)\n" \
@@ -99,6 +103,7 @@ def help_info():
 			+ "#4 for unsubscribe all\n" \
 			+ "#5 for show all subscriptions\n" \
 			+ "#6 for help information"
+
 
 def subscribe_stocks(symbols, phone_number):
 	"""
@@ -152,7 +157,8 @@ def subscribe_stocks(symbols, phone_number):
 	error_message += '' if error_message == '' else 'are not valid stock symbol'
 	message += 'are subscribed\n' if message != '' else 'Please type #2 followed by valid stock symbols to subscribe stock\n'
 	return message + error_message
-			
+	
+
 def unsubscribe_stocks(symbols, phone_number):
 	"""
 	@Param 'symbols': a list of symbol
@@ -179,6 +185,7 @@ def unsubscribe_stocks(symbols, phone_number):
 				pass
 	return 'Successfully Unsubscribe' + message if message != '' else 'Please type #3 followed by valid stock symbols to unsubscribe stock'
 
+
 def unsubscribe_all(phone_number):
 	message = ''
 	try:
@@ -189,6 +196,7 @@ def unsubscribe_all(phone_number):
 		Subscription.objects.filter(user__phone_number=user.phone_number).update(status=False)
 		message = 'Successfully Unsubscribe All'
 	return message
+
 
 def show_subscriptions(phone_number):
 	message = ''

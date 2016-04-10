@@ -1,5 +1,6 @@
 from __future__ import absolute_import
 from .models import *
+from django.conf import settings
 
 from celery import shared_task
 
@@ -27,9 +28,7 @@ def post():
 		pass
 
 	## send message
-	account_sid = "ACffa7824eb497622cb714f725e51e09c0"
-	auth_token = "24494071c6899f220c26500dba62e816"
-	client = TwilioRestClient(account_sid, auth_token)
+	client = TwilioRestClient(settings.Twilio_ACCOUNT_SID, settings.Twilio_AUTH_TOKEN)
 	user_dir = {}
 	try:
 		subscription_list = Subscription.objects.filter(status=True)
