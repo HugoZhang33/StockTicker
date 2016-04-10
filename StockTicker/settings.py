@@ -9,10 +9,38 @@ https://docs.djangoproject.com/en/1.8/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/1.8/ref/settings/
 """
+from __future__ import absolute_import
+import os
+from datetime import timedelta
+
+# Celery settings
+BROKER_URL = os.environ.get("REDIS_URL")
+
+#: Only add pickle to this list if your broker is secured
+#: from unwanted access (see userguide/security.html)
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+
+# CELERYBEAT_SCHEDULE = {
+#     'post-every-30-seconds': {
+#         'task': 'handler.tasks.post',
+#         'schedule': timedelta(seconds=30)
+#     },
+# }
+
+from celery.schedules import crontab
+
+CELERYBEAT_SCHEDULE = {
+    # Executes every 5:01 P.M
+    'post-every-17:01pm': {
+        'task': 'handler.tasks.post',
+        'schedule': crontab(hour=17, minute=01),
+    },
+}
+
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
-import os
-
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
@@ -93,7 +121,7 @@ DATABASES = {
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'America/Los_Angeles'
 
 USE_I18N = True
 
@@ -110,6 +138,4 @@ STATIC_URL = '/static/'
 #Twilio API Credentials
 Twilio_ACCOUNT_SID = 'ACffa7824eb497622cb714f725e51e09c0'
 Twilio_AUTH_TOKEN  = '24494071c6899f220c26500dba62e816'
-
-
 

@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 from django.http import HttpResponse
@@ -8,10 +10,12 @@ import twilio.twiml
 
 from yahoo_finance import Share
 
-# Customize a Reply to incoming messages
 @csrf_exempt
 @require_http_methods(["POST"])
 def reply_sms(request):
+	"""
+	Reply to incoming messages
+	"""
 	text = request.POST.get("Body", "").strip().upper()
 	phone_number = request.POST.get("From", "")
 	command, symbols = split_text(text)
@@ -23,9 +27,9 @@ def reply_sms(request):
 def split_text(text):
 	"""
 	Split text into stock symbols and optional command 
-	@return (command, symbols)
+	@Return (command, symbols)
 	"""
-	commands = ['#0', '#1', '#2', '#3', '#4', '#5']
+	commands = ['#0', '#1', '#2', '#3', '#4', '#5', '#6']
 	if text[0:2] in commands:
 		return (text[0:2], text[2:].split())
 	else:
@@ -33,6 +37,15 @@ def split_text(text):
 
 def execute_command(command, symbols, phone_number):
 	"""
+	@Param 'command'：	
+					#0 for stock price
+					#1 for more information
+					#2 for daily update subscription
+					#3 for daily update unsubscription
+					#4 for unsubscribe all
+					#5 for show all subscriptions
+					#6 for help information
+	@Return str
 
 	"""
 	if command == '#0':
@@ -45,13 +58,15 @@ def execute_command(command, symbols, phone_number):
 		return unsubscribe_stocks(symbols, phone_number)
 	elif command == '#4':
 		return unsubscribe_all(phone_number)
+	elif command == '#5':
+		return show_subscriptions(phone_number)
 	else:
 		return help_info()
 
 def get_stock_info(symbols, moreInfo=False):
 	""" 
 	Scrape stock info from Yahoo finance
-	@Paramster 'moreInfo': False for getting price, True for getting more information
+	@Param 'moreInfo': False for getting price, True for getting more information
 	@Return 'message': "symbol: Price-number, Open Price-number, Pre Close Price-number, High Price-number, 
 						Low price-number"
 	"""
@@ -70,7 +85,10 @@ def get_stock_info(symbols, moreInfo=False):
 						% (symbol, price, stock.get_open(), stock.get_prev_close(), stock.get_days_high(), stock.get_days_low())
 		else:
 			message += '#' + symbol + ': ' + price + '\n'
-	return message
+
+	alert_message = 'Please type #1 followed by stock symbols to get more information' if moreInfo == True else \
+					'Please type #0 followed by stock symbols to get stock price'
+	return message if message != '' else alert_message
 
 def help_info():
 	return  "Command #0, #1, #2, #3 are followed by stock symbols, like '#1 FB GOOG' would return more information about the stock of Facebook and Google\n\n" \
@@ -79,11 +97,13 @@ def help_info():
 			+ "#2 for daily update subscription\n" \
 			+ "#3 for daily update unsubscription\n" \
 			+ "#4 for unsubscribe all\n" \
-			+ "#5 for help information"
+			+ "#5 for show all subscriptions\n" \
+			+ "#6 for help information"
 
 def subscribe_stocks(symbols, phone_number):
 	"""
-
+	@Param 'symbols': a list of symbol
+	@Return str
 	"""
 	error_message = ''
 	message = ''
@@ -102,7 +122,7 @@ def subscribe_stocks(symbols, phone_number):
 		try:
 			stock = Stock.objects.get(symbol=symbol)
 		except Stock.DoesNotExist:
-			# Validate stock
+			# Validate stock symbol
 			try:
 				s = Share(symbol)
 				price = s.get_price()
@@ -126,14 +146,19 @@ def subscribe_stocks(symbols, phone_number):
 		except Subscription.DoesNotExist:
 			subscription_list.append(Subscription(user=user, stock=stock))
 
+	# Save all new subscription into database
 	Subscription.objects.bulk_create(subscription_list)
-	return message + 'are subscribed\n' + error_message + 'are not valid stock symbol'
+
+	error_message += '' if error_message == '' else 'are not valid stock symbol'
+	message += 'are subscribed\n' if message != '' else 'Please type #2 followed by valid stock symbols to subscribe stock\n'
+	return message + error_message
 			
 def unsubscribe_stocks(symbols, phone_number):
 	"""
-
+	@Param 'symbols': a list of symbol
+	@Return str
 	"""
-	message = 'Successfully Unsubscribe'
+	message = ''
 	try:
 		user = User.objects.get(phone_number=phone_number)
 	except User.DoesNotExist:
@@ -149,14 +174,12 @@ def unsubscribe_stocks(symbols, phone_number):
 				s = Subscription.objects.get(user=user, stock=stock)
 				s.status = False
 				s.save()
+				message += '#' + symbol + ', '
 			except Subscription.DoesNotExist:
 				pass
-	return message
+	return 'Successfully Unsubscribe' + message if message != '' else 'Please type #3 followed by valid stock symbols to unsubscribe stock'
 
 def unsubscribe_all(phone_number):
-	"""
-
-	"""
 	message = ''
 	try:
 		user = User(phone_number=phone_number)
@@ -166,4 +189,16 @@ def unsubscribe_all(phone_number):
 		Subscription.objects.filter(user__phone_number=user.phone_number).update(status=False)
 		message = 'Successfully Unsubscribe All'
 	return message
+
+def show_subscriptions(phone_number):
+	message = ''
+	try:
+		user = User(phone_number=phone_number)
+	except User.DoesNotExist:
+		return 'You don\'t subscribe any stock information'
+	else:
+		s_list = Subscription.objects.filter(user__phone_number=user.phone_number).filter(status=True)
+		for s in s_list:
+			message += '#' + s.stock.symbol + ', '
+	return  'You have subscribed ' + message if message != '' else 'You don\'t subscribe any stock information'
 
