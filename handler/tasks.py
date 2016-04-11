@@ -28,7 +28,7 @@ def post():
 		pass
 
 	## send message
-	client = TwilioRestClient(settings.Twilio_ACCOUNT_SID, settings.Twilio_AUTH_TOKEN)
+	client = TwilioRestClient(settings.TWILIO_ACCOUNT_SID, settings.TWILIO_AUTH_TOKEN)
 	user_dir = {}
 	try:
 		subscription_list = Subscription.objects.filter(status=True)
